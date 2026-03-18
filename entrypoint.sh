@@ -181,11 +181,14 @@ games:
       - -sprint
 EOF
 
-# Ensure data dirs exist
+# Ensure data dirs exist with runtime user/group ownership
 
 mkdir -p "${DCSS_DATA_DIR}" \
          "${DCSS_RCFILE_PATH}" \
          "${DCSS_INPROGRESS_PATH}"
+
+[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}" "${DCSS_RCFILE_PATH}" "${DCSS_INPROGRESS_PATH}"
+[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}" "${DCSS_RCFILE_PATH}" "${DCSS_INPROGRESS_PATH}"
 
 # Launch
 
