@@ -1,0 +1,120 @@
+name: Promote dev version tag to release version tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        description: "Targeted release version tag (e.g. 'v0.34.0')"
+        type: string
+        required: true
+      promote-latest:
+        description: "Also promote to 'latest' tag (only enable if promoting the newest DCSS release)"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  promote-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PROJECT_NAME: dcss
+    steps:
+      - name: Validate selections
+        shell: bash -euo pipefail {0}
+        id: prepare
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version }}
+          PROMOTE_LATEST: ${{ inputs.promote-latest }}
+        run: |
+          if ! [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::RELEASE_VERSION must match v<digit>.<digit>.<digit> (e.g. v0.34.0)"
+            exit 1
+          fi
+          source_tag="${RELEASE_VERSION}-dev"
+          tags=("${RELEASE_VERSION}")
+
+          if [[ "${PROMOTE_LATEST}" == "true" ]]; then
+            tags+=("latest")
+          fi
+
+          {
+            printf 'source-tag=%s\n' "${source_tag}"
+            printf 'tags<<EOF\n'
+            for tag in "${tags[@]}"; do
+              printf '%s\n' "$tag"
+            done
+            printf 'EOF\n'
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4.0.0
+        with:
+          driver: docker
+
+      - name: Login to DockerHub
+        uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e  # v4.0.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e  # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Forgejo Container Registry
+        uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e  # v4.0.0
+        with:
+          registry: forgejo.treyturner.info
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.FORGEJO_REGISTRY_TOKEN }}
+
+      - name: Promote tags
+        shell: bash -euo pipefail {0}
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          PROJECT_NAME: ${{ env.PROJECT_NAME }}
+          GH_OWNER: ${{ github.repository_owner }}
+          SOURCE_TAG: ${{ steps.prepare.outputs.source-tag }}
+          TARGET_TAGS: ${{ steps.prepare.outputs.tags }}
+        run: |
+          owner_lower=$(printf '%s' "$GH_OWNER" | tr '[:upper:]' '[:lower:]')
+          # hub_source="${DOCKERHUB_USERNAME}/${PROJECT_NAME}:${SOURCE_TAG}"
+          ghcr_source="ghcr.io/${owner_lower}/${PROJECT_NAME}:${SOURCE_TAG}"
+          forgejo_source="forgejo.treyturner.info/${owner_lower}/${PROJECT_NAME}:${SOURCE_TAG}"
+
+          mkdir -p tags
+          printf '%s\n' "$TARGET_TAGS" > tags/list
+
+          # echo "Validating source manifest on DockerHub: ${hub_source}"
+          # docker buildx imagetools inspect "${hub_source}" > /dev/null
+
+          echo "Validating source manifest on GHCR: ${ghcr_source}"
+          docker buildx imagetools inspect "${ghcr_source}" > /dev/null
+
+          echo "Validating source manifest on Forgejo: ${forgejo_source}"
+          docker buildx imagetools inspect "${forgejo_source}" > /dev/null
+
+          while IFS= read -r tag; do
+            [ -n "$tag" ] || continue
+
+            # echo "Promoting DockerHub tag: ${hub_source} -> ${tag}"
+            # docker buildx imagetools create \
+            #   --tag "${DOCKERHUB_USERNAME}/${PROJECT_NAME}:${tag}" \
+            #   "${hub_source}"
+
+            echo "Promoting GHCR tag: ${ghcr_source} -> ${tag}"
+            docker buildx imagetools create \
+              --tag "ghcr.io/${owner_lower}/${PROJECT_NAME}:${tag}" \
+              "${ghcr_source}"
+
+            echo "Promoting Forgejo tag: ${forgejo_source} -> ${tag}"
+            docker buildx imagetools create \
+              --tag "forgejo.treyturner.info/${owner_lower}/${PROJECT_NAME}:${tag}" \
+              "${forgejo_source}"
+          done < tags/list

@@ -1,0 +1,58 @@
+name: Publish
+description: Publish a Docker image to one or more registries
+
+inputs:
+  dockerhub-username:
+    type: string
+    required: false
+  dockerhub-password:
+    type: string
+    required: false
+  github-token:
+    type: string
+    required: true
+  forgejo-token:
+    type: string
+    required: true
+  refs:
+    type: string
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Login to DockerHub
+      if: ${{ contains(inputs.refs, 'docker.io') && inputs.dockerhub-username != '' && inputs.dockerhub-password != '' }}
+      uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e  # v4.0.0
+      with:
+        username: ${{ inputs.dockerhub-username }}
+        password: ${{ inputs.dockerhub-password }}
+
+    - name: Login to GitHub Container Registry
+      if: ${{ contains(inputs.refs, 'ghcr.io') }}
+      uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e  # v4.0.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ inputs.github-token }}
+
+    - name: Login to Forgejo Container Registry
+      if: ${{ contains(inputs.refs, 'forgejo.treyturner.info') }}
+      uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e  # v4.0.0
+      with:
+        registry: forgejo.treyturner.info
+        username: ${{ github.repository_owner }}
+        password: ${{ inputs.forgejo-token }}
+
+    - name: Publish
+      shell: bash -euo pipefail {0}
+      env:
+        REFS: ${{ inputs.refs }}
+      run: |
+        echo "Publishing images..."
+        while IFS= read -r ref; do
+          if [ -n "$ref" ]; then
+            echo "Pushing $ref"
+            docker push "$ref"
+          fi
+        done <<< "${REFS}"

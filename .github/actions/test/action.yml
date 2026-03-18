@@ -1,0 +1,42 @@
+name: Test DCSS Docker image
+description: Run tests to verify the DCSS Docker image works correctly
+
+inputs:
+  image-ref:
+    description: 'Docker image reference to test'
+    required: true
+  crawl-tag:
+    description: 'Expected DCSS version'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Test CRAWL_TAG environment variable
+      shell: bash -euo pipefail {0}
+      env:
+        IMAGE_REF: ${{ inputs.image-ref }}
+        CRAWL_TAG: ${{ inputs.crawl-tag }}
+      run: |
+        echo "Testing CRAWL_TAG environment variable..."
+        output="$(docker run --rm --entrypoint printenv ${IMAGE_REF} CRAWL_TAG)"
+        if [[ "${output}" != "${CRAWL_TAG}" ]]; then
+          echo "❌ CRAWL_TAG mismatch: expected '${CRAWL_TAG}', got '${output}'"
+          exit 1
+        fi
+        echo "✅ CRAWL_TAG test passed"
+
+    - name: Test crawl binary version
+      shell: bash -euo pipefail {0}
+      env:
+        IMAGE_REF: ${{ inputs.image-ref }}
+        CRAWL_TAG: ${{ inputs.crawl-tag }}
+      run: |
+        echo "Testing crawl binary version..."
+        output="$(docker run --rm --entrypoint ./crawl ${IMAGE_REF} -version)"
+        if ! grep -qF "${CRAWL_TAG}" <<< "${output}"; then
+          echo "❌ Unexpected crawl version:"
+          echo "${output}"
+          exit 1
+        fi
+        echo "✅ Crawl binary version test passed"

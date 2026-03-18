@@ -1,0 +1,29 @@
+name: Build and test PR
+
+on:
+  pull_request:
+    types: ['opened', 'synchronize']
+
+jobs:
+  build-and-test-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CRAWL_TAG: "0.34.0"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build
+        id: build
+        uses: ./.github/actions/build
+        with:
+          label: ${{ format('pr{0}', github.event.pull_request.number) }}
+          upstream-ref: v${{ env.CRAWL_TAG }}
+
+      - name: Test
+        uses: ./.github/actions/test
+        with:
+          image-ref: ${{ steps.build.outputs.primary-ref }}
+          crawl-tag: ${{ steps.build.outputs.crawl-tag }}

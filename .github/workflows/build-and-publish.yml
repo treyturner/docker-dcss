@@ -1,0 +1,48 @@
+name: Build and publish dev
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      upstream-ref:
+        required: false
+        type: string
+
+jobs:
+  build-and-publish-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      CRAWL_TAG: "0.34.0"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Build
+        id: build
+        uses: ./.github/actions/build
+        with:
+          label: 'dev'
+          repos: |
+            ghcr.io/treyturner/dcss
+            docker.io/treyturner/dcss
+            forgejo.treyturner.info/treyturner/dcss
+          upstream-ref: v${{ inputs.upstream-ref && inputs.upstream-ref || env.CRAWL_TAG }}
+
+      - name: Test
+        uses: ./.github/actions/test
+        with:
+          image-ref: ${{ steps.build.outputs.primary-ref }}
+          crawl-tag: ${{ steps.build.outputs.crawl-tag }}
+
+      - name: Publish
+        uses: ./.github/actions/publish
+        with:
+          dockerhub-username: ${{ vars.DOCKERHUB_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+          github-token: ${{ github.token }}
+          forgejo-token: ${{ secrets.FORGEJO_REGISTRY_TOKEN }}
+          refs: ${{ steps.build.outputs.refs }}

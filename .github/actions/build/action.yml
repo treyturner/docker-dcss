@@ -1,0 +1,113 @@
+name: Build
+description: Build a Dockerfile
+
+inputs:
+  label:
+    description: "Optional build suffix, e.g. 'dev'"
+    type: string
+    required: false
+  repos:
+    description: "Newline-separated list of <registry>/<repository> used to build refs"
+    type: string
+    required: false
+  upstream-ref:
+    description: "Upstream ref to build"
+    type: string
+    required: true
+
+outputs:
+  repos:
+    description: "Newline-separated list of <registry>/<repository> used to build refs"
+    value: ${{ steps.compute.outputs.repos }}
+  tags:
+    description: "Newline-separated list of built tags"
+    value: ${{ steps.compute.outputs.tags }}
+  refs:
+    description: "Newline-separated list of fully-qualified built image refs (repository:tag)"
+    value: ${{ steps.compute.outputs.refs }}
+  primary-tag:
+    description: "Primary image tag (without repository)"
+    value: ${{ steps.compute.outputs.primary-tag }}
+  primary-ref:
+    description: "First fully-qualified image reference produced by this build"
+    value: ${{ steps.compute.outputs.primary-ref }}
+  imageid:
+    description: "Built image ID"
+    value: ${{ steps.build.outputs.imageid }}
+  digest:
+    description: "Built image digest"
+    value: ${{ steps.build.outputs.digest }}
+  crawl-tag:
+    description: "Upstream version without v prefix (e.g. 0.34.0)"
+    value: ${{ steps.compute.outputs.crawl-tag }}
+  metadata:
+    description: "Built image metadata"
+    value: ${{ steps.build.outputs.metadata }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute tags and refs
+      id: compute
+      shell: bash -euo pipefail {0}
+      env:
+        UPSTREAM_REF: ${{ inputs.upstream-ref }}
+        LABEL: ${{ inputs.label }}
+        REPOS: ${{ inputs.repos }}
+        REPOSITORY_NAME: ${{ github.repository }}
+      run: |
+        tags=()
+        base_tag="${UPSTREAM_REF}${LABEL:+-$LABEL}"
+        tags+=("${base_tag}")
+
+        run_tag="${base_tag}-${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+        tags+=("${run_tag}")
+
+        mapfile -t repo_list < <(
+          printf '%s' "${REPOS:-}" \
+            | sed 's/\\r//g' \
+            | sed 's/\\n/\n/g' \
+            | sed '/^\s*$/d'
+        )
+
+        if ((${#repo_list[@]} == 0)); then
+          repo_list=("local/${REPOSITORY_NAME#*/}")
+        fi
+
+        refs=()
+        for repo in "${repo_list[@]:-}"; do
+          repo="$(printf '%s' "$repo" | xargs)"
+          [ -z "${repo}" ] && continue
+          for tag in "${tags[@]}"; do
+            refs+=("${repo}:${tag}")
+          done
+        done
+
+        primary_ref="${refs[0]}"
+
+        crawl_tag="${UPSTREAM_REF#v}"
+
+        {
+          printf 'crawl-tag=%s\n' "${crawl_tag}"
+          printf 'tags<<EOF\n%s\nEOF\n' "$(printf '%s\n' "${tags[@]}")"
+          printf 'refs<<EOF\n%s\nEOF\n' "$(printf '%s\n' "${refs[@]}")"
+          printf 'repos<<EOF\n%s\nEOF\n' "$(printf '%s\n' "${repo_list[@]}")"
+          printf 'primary-tag=%s\n' "${base_tag}"
+          printf 'primary-ref=%s\n' "${primary_ref}"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4.0.0
+      with:
+        driver: docker
+
+    - name: Build image
+      id: build
+      uses: docker/build-push-action@eb6512707bea5740b2608f2a43ece7bc543cb75b  # v7.0.0
+      with:
+        context: .
+        push: false
+        load: true
+        build-args: |
+          CRAWL_TAG=${{ steps.compute.outputs.crawl-tag }}
+        tags: ${{ steps.compute.outputs.refs }}
