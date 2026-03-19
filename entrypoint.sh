@@ -200,10 +200,11 @@ EOF
 mkdir -p "${DCSS_DATA_DIR}" \
          "${DCSS_RCFILE_PATH}" \
          "${DCSS_INPROGRESS_PATH}" \
-         "${DCSS_TTYREC_PATH_BASE}"
+         "${DCSS_TTYREC_PATH_BASE}" \
+         "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}/db"
 
-[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}"
-[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}"
+[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
+[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
 
 # Launch
 
