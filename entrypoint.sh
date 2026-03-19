@@ -1,28 +1,27 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 ############
 # DEFAULTS #
 ############
 
-DCSS_DATA_DIR="${DCSS_DATA_DIR:-/data}"
+DCSS_DATA="${DCSS_DATA:-/data}"
 
 ## Server
-DCSS_BIND_PORT="${DCSS_BIND_PORT:-80}"
+DCSS_BIND_PORT="${DCSS_BIND_PORT:-8080}"
 DCSS_BIND_ADDRESS="${DCSS_BIND_ADDRESS:-}"
 DCSS_SERVER_ID="${DCSS_SERVER_ID:-}"
 
 ## Data paths
-DCSS_PASSWORD_DB="${DCSS_PASSWORD_DB:-${DCSS_DATA_DIR}/passwd.db3}"
-DCSS_DIR_PATH="${DCSS_DIR_PATH:-/app}"
-DCSS_RCFILE_PATH="${DCSS_RCFILE_PATH:-${DCSS_DATA_DIR}/rcs}"
-DCSS_MACRO_PATH="${DCSS_MACRO_PATH:-${DCSS_DATA_DIR}/rcs}"
-DCSS_MORGUE_PATH="${DCSS_MORGUE_PATH:-${DCSS_DATA_DIR}/rcs/%n}"
-DCSS_TTYREC_PATH="${DCSS_TTYREC_PATH:-${DCSS_DATA_DIR}/rcs/ttyrecs/%n}"
+DCSS_PASSWORD_DB="${DCSS_PASSWORD_DB:-${DCSS_DATA}/passwd.db3}"
+DCSS_DIR_PATH="${DCSS_DIR_PATH:-${DCSS_DATA}/crawl}"
+DCSS_RCFILE_PATH="${DCSS_RCFILE_PATH:-${DCSS_DATA}/rcs}"
+DCSS_MACRO_PATH="${DCSS_MACRO_PATH:-${DCSS_DATA}/rcs}"
+DCSS_MORGUE_PATH="${DCSS_MORGUE_PATH:-${DCSS_DATA}/rcs/%n}"
+DCSS_TTYREC_PATH="${DCSS_TTYREC_PATH:-${DCSS_DATA}/rcs/ttyrecs/%n}"
 DCSS_TTYREC_PATH_BASE="${DCSS_TTYREC_PATH%/%n}"
-DCSS_INPROGRESS_PATH="${DCSS_INPROGRESS_PATH:-${DCSS_DATA_DIR}/rcs/running}"
-DCSS_SAVE_PATH="${DCSS_SAVE_PATH:-${DCSS_DATA_DIR}/saves}"
-DCSS_SOCKET_PATH="${DCSS_SOCKET_PATH:-${DCSS_DATA_DIR}/rcs}"
+DCSS_INPROGRESS_PATH="${DCSS_INPROGRESS_PATH:-${DCSS_DATA}/rcs/running}"
+DCSS_SOCKET_PATH="${DCSS_SOCKET_PATH:-${DCSS_DATA}/rcs}"
 
 ## Logging
 DCSS_LOG_LEVEL="${DCSS_LOG_LEVEL:-INFO}"
@@ -69,7 +68,7 @@ bind_port: ${DCSS_BIND_PORT}
 password_db: "${DCSS_PASSWORD_DB}"
 server_id: "${DCSS_SERVER_ID}"
 crypt_algorithm: "${DCSS_CRYPT_ALGORITHM}"
-dgl_status_file: "${DCSS_DATA_DIR}/rcs/status"
+dgl_status_file: "${DCSS_DATA}/rcs/status"
 init_player_program: "${init_player}"
 EOF
 
@@ -89,37 +88,37 @@ EOF
 fi
 
 ## Connections and limits
-[ -n "$DCSS_MAX_CONNECTIONS" ]     && echo "max_connections: ${DCSS_MAX_CONNECTIONS}" >> "$cfg"
-[ -n "$DCSS_CONNECTION_TIMEOUT" ]  && echo "connection_timeout: ${DCSS_CONNECTION_TIMEOUT}" >> "$cfg"
-[ -n "$DCSS_MAX_IDLE_TIME" ]       && echo "max_idle_time: ${DCSS_MAX_IDLE_TIME}" >> "$cfg"
-[ -n "$DCSS_MAX_LOBBY_IDLE_TIME" ] && echo "max_lobby_idle_time: ${DCSS_MAX_LOBBY_IDLE_TIME}" >> "$cfg"
-[ -n "$DCSS_MAX_CHAT_LENGTH" ]     && echo "max_chat_length: ${DCSS_MAX_CHAT_LENGTH}" >> "$cfg"
-[ -n "$DCSS_MAX_PASSWD_LENGTH" ]   && echo "max_passwd_length: ${DCSS_MAX_PASSWD_LENGTH}" >> "$cfg"
+[[ -n "$DCSS_MAX_CONNECTIONS" ]]     && echo "max_connections: ${DCSS_MAX_CONNECTIONS}" >> "$cfg"
+[[ -n "$DCSS_CONNECTION_TIMEOUT" ]]  && echo "connection_timeout: ${DCSS_CONNECTION_TIMEOUT}" >> "$cfg"
+[[ -n "$DCSS_MAX_IDLE_TIME" ]]       && echo "max_idle_time: ${DCSS_MAX_IDLE_TIME}" >> "$cfg"
+[[ -n "$DCSS_MAX_LOBBY_IDLE_TIME" ]] && echo "max_lobby_idle_time: ${DCSS_MAX_LOBBY_IDLE_TIME}" >> "$cfg"
+[[ -n "$DCSS_MAX_CHAT_LENGTH" ]]    && echo "max_chat_length: ${DCSS_MAX_CHAT_LENGTH}" >> "$cfg"
+[[ -n "$DCSS_MAX_PASSWD_LENGTH" ]]   && echo "max_passwd_length: ${DCSS_MAX_PASSWD_LENGTH}" >> "$cfg"
 
 ## URLs
-[ -n "$DCSS_LOBBY_URL" ]  && echo "lobby_url: \"${DCSS_LOBBY_URL}\"" >> "$cfg"
-[ -n "$DCSS_PLAYER_URL" ] && echo "player_url: \"${DCSS_PLAYER_URL}\"" >> "$cfg"
+[[ -n "$DCSS_LOBBY_URL" ]]  && echo "lobby_url: \"${DCSS_LOBBY_URL}\"" >> "$cfg"
+[[ -n "$DCSS_PLAYER_URL" ]] && echo "player_url: \"${DCSS_PLAYER_URL}\"" >> "$cfg"
 
 ## Reverse proxy
-[ -n "$DCSS_HTTP_XHEADERS" ] && echo "http_xheaders: true" >> "$cfg"
+[[ -n "$DCSS_HTTP_XHEADERS" ]] && echo "http_xheaders: true" >> "$cfg"
 
 ## Moderation
-[ -n "$DCSS_NEW_ACCOUNTS_DISABLED" ] && echo "new_accounts_disabled: true" >> "$cfg"
-[ -n "$DCSS_NEW_ACCOUNTS_HOLD" ]     && echo "new_accounts_hold: true" >> "$cfg"
+[[ -n "$DCSS_NEW_ACCOUNTS_DISABLED" ]] && echo "new_accounts_disabled: true" >> "$cfg"
+[[ -n "$DCSS_NEW_ACCOUNTS_HOLD" ]]     && echo "new_accounts_hold: true" >> "$cfg"
 
 ## Password reset
-[ -n "$DCSS_ALLOW_PASSWORD_RESET" ] && echo "allow_password_reset: true" >> "$cfg"
-[ -n "$DCSS_ADMIN_PASSWORD_RESET" ] && echo "admin_password_reset: true" >> "$cfg"
+[[ -n "$DCSS_ALLOW_PASSWORD_RESET" ]] && echo "allow_password_reset: true" >> "$cfg"
+[[ -n "$DCSS_ADMIN_PASSWORD_RESET" ]] && echo "admin_password_reset: true" >> "$cfg"
 
 ## Process IDs
-[ -n "$DCSS_UID" ] && echo "uid: ${DCSS_UID}" >> "$cfg"
-[ -n "$DCSS_GID" ] && echo "gid: ${DCSS_GID}" >> "$cfg"
+[[ -n "$DCSS_UID" ]] && echo "uid: ${DCSS_UID}" >> "$cfg"
+[[ -n "$DCSS_GID" ]] && echo "gid: ${DCSS_GID}" >> "$cfg"
 
 ## Dev XP
-[ -n "$DCSS_AUTOLOGIN" ] && echo "autologin: \"${DCSS_AUTOLOGIN}\"" >> "$cfg"
+[[ -n "$DCSS_AUTOLOGIN" ]] && echo "autologin: \"${DCSS_AUTOLOGIN}\"" >> "$cfg"
 
 ## SMTP - if DCSS_SMTP_HOST is set
-if [ -n "$DCSS_SMTP_HOST" ]; then
+if [[ -n "$DCSS_SMTP_HOST" ]]; then
     cat >> "$cfg" <<EOF
 smtp_host: "${DCSS_SMTP_HOST}"
 smtp_port: ${DCSS_SMTP_PORT:-25}
@@ -131,7 +130,7 @@ EOF
 fi
 
 ## SSL - when both cert and key are set
-if [ -n "$DCSS_SSL_CERT" ] && [ -n "$DCSS_SSL_KEY" ]; then
+if [[ -n "$DCSS_SSL_CERT" ]] && [[ -n "$DCSS_SSL_KEY" ]]; then
     cat >> "$cfg" <<EOF
 ssl_options:
   certfile: "${DCSS_SSL_CERT}"
@@ -146,7 +145,7 @@ fi
 
 games=/app/source/webserver/games.d/base.yaml
 
-if [ -n "$DCSS_MORGUE_URL" ]; then
+if [[ -n "$DCSS_MORGUE_URL" ]]; then
     MORGUE_URL_YAML="\"${DCSS_MORGUE_URL}\""
 else
     MORGUE_URL_YAML="null"
@@ -159,7 +158,6 @@ templates:
     rcfile_path: "${DCSS_RCFILE_PATH}"
     macro_path: "${DCSS_MACRO_PATH}"
     morgue_path: "${DCSS_MORGUE_PATH}"
-    save_path: "${DCSS_SAVE_PATH}"
     socket_path: "${DCSS_SOCKET_PATH}"
     dir_path: "${DCSS_DIR_PATH}"
     inprogress_path: "${DCSS_INPROGRESS_PATH}"
@@ -199,15 +197,18 @@ EOF
 
 # Ensure data dirs exist with runtime user/group ownership
 
-mkdir -p "${DCSS_DATA_DIR}" \
-         "${DCSS_RCFILE_PATH}" \
-         "${DCSS_SAVE_PATH}" \
-         "${DCSS_INPROGRESS_PATH}" \
-         "${DCSS_TTYREC_PATH_BASE}" \
-         "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}/db"
+data_dirs=(
+    "${DCSS_DATA}"
+    "${DCSS_RCFILE_PATH}"
+    "${DCSS_DIR_PATH}"
+    "${DCSS_INPROGRESS_PATH}"
+    "${DCSS_TTYREC_PATH_BASE}"
+    "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}/db"
+)
 
-[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}" "${DCSS_SAVE_PATH}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
-[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}" "${DCSS_SAVE_PATH}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
+mkdir -p "${data_dirs[@]}"
+[[ -n "$DCSS_UID" ]] && chown -R "$DCSS_UID" "${data_dirs[@]}"
+[[ -n "$DCSS_GID" ]] && chgrp -R "$DCSS_GID" "${data_dirs[@]}"
 
 # Launch
 

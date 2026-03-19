@@ -53,7 +53,7 @@ COPY --from=builder /build/crawl/crawl-ref/docs/ /app/docs/
 WORKDIR /app/source
 
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk add libstdc++ libgcc
+    apk add bash libstdc++ libgcc
 
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir --no-deps /wheels/*.whl \

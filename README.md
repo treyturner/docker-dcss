@@ -11,10 +11,10 @@ Images are published to Docker Hub, GitHub Container Registry, and Forgejo:
 ## Quick Start
 
 ```sh
-docker run -d -p 80:80 -v dcss-data:/data treyturner/dcss
+docker run -d -p 8080:8080 -v dcss-data:/data treyturner/dcss
 ```
 
-Then open `http://localhost` in a browser.
+Then open `http://localhost:8080` in a browser.
 
 ## Image Tags
 
@@ -43,7 +43,7 @@ Runtime configuration is handled through environment variables. At container sta
 | Variable | Default | Description |
 | --- | --- | --- |
 | `DCSS_BIND_ADDRESS` | _(all interfaces)_ | Address to bind to |
-| `DCSS_BIND_PORT` | `80` | HTTP listen port |
+| `DCSS_BIND_PORT` | `8080` | HTTP listen port |
 | `DCSS_SERVER_ID` | _(empty)_ | Server name used in ttyrec metadata |
 | `DCSS_HTTP_XHEADERS` | _(unset)_ | Set to trust `X-Real-IP` header from a reverse proxy |
 
@@ -53,23 +53,22 @@ All persistent data defaults to paths under `/data`. Mount a volume there to pre
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `DCSS_DATA_DIR` | `/data` | Base directory for all persistent data |
-| `DCSS_PASSWORD_DB` | `$DCSS_DATA_DIR/passwd.db3` | User and password database |
-| `DCSS_DIR_PATH` | `$DCSS_DATA_DIR` | Game data directory (milestones, logfile) |
-| `DCSS_RCFILE_PATH` | `$DCSS_DATA_DIR/rcs` | Player RC files |
-| `DCSS_MACRO_PATH` | `$DCSS_DATA_DIR/rcs` | Player macro files |
-| `DCSS_MORGUE_PATH` | `$DCSS_DATA_DIR/rcs/%n` | Morgue dump directory (`%n` = player name) |
-| `DCSS_TTYREC_PATH` | `$DCSS_DATA_DIR/rcs/ttyrecs/%n` | TTYrec recording directory |
-| `DCSS_INPROGRESS_PATH` | `$DCSS_DATA_DIR/rcs/running` | In-progress game tracking |
-| `DCSS_SAVE_PATH` | `$DCSS_DATA_DIR/saves` | Dormant save games |
-| `DCSS_SOCKET_PATH` | `$DCSS_DATA_DIR/rcs` | Unix socket directory for crawl IPC |
+| `DCSS_DATA` | `/data` | Base directory for all persistent data |
+| `DCSS_PASSWORD_DB` | `$DCSS_DATA/passwd.db3` | User and password database |
+| `DCSS_DIR_PATH` | `$DCSS_DATA/crawl` | Crawl `-dir` base path for saves, prefs, and shared data (milestones, logfile, bones) |
+| `DCSS_RCFILE_PATH` | `$DCSS_DATA/rcs` | Player RC files |
+| `DCSS_MACRO_PATH` | `$DCSS_DATA/rcs` | Player macro files |
+| `DCSS_MORGUE_PATH` | `$DCSS_DATA/rcs/%n` | Morgue dump directory (`%n` = player name) |
+| `DCSS_TTYREC_PATH` | `$DCSS_DATA/rcs/ttyrecs/%n` | TTYrec recording directory |
+| `DCSS_INPROGRESS_PATH` | `$DCSS_DATA/rcs/running` | In-progress game tracking |
+| `DCSS_SOCKET_PATH` | `$DCSS_DATA/rcs` | Unix socket directory for crawl IPC |
 
 ### Logging
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `DCSS_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` |
-| `DCSS_LOG_FILE` | `$DCSS_DATA_DIR/webtiles.log` | Log file path; set to empty to log to stderr only |
+| `DCSS_LOG_FILE` | _(unset)_ | Log file path; logs to stderr only if unset |
 | `DCSS_LOG_FORMAT` | `%(asctime)s %(levelname)s: %(message)s` | Python logging format string |
 
 ### Security
@@ -148,18 +147,18 @@ Behind a reverse proxy with custom port:
 
 ```sh
 docker run -d \
-    -e DCSS_BIND_PORT=8080 \
     -e DCSS_HTTP_XHEADERS=true \
     -e DCSS_LOBBY_URL=https://crawl.example.com/ \
-    -p 8080:8080 \
+    -p 1337:8080 \
     -v dcss-data:/data \
     treyturner/dcss
 ```
 
-With SSL:
+With standard HTTP on port 80 and SSL on port 443:
 
 ```sh
 docker run -d \
+    -e DCSS_BIND_PORT=80 \
     -e DCSS_SSL_CERT=/certs/fullchain.pem \
     -e DCSS_SSL_KEY=/certs/privkey.pem \
     -e DCSS_SSL_PORT=443 \
@@ -167,12 +166,6 @@ docker run -d \
     -v dcss-data:/data \
     -v /etc/letsencrypt/live/crawl.example.com:/certs:ro \
     treyturner/dcss
-```
-
-Stderr-only logging (for `docker logs`):
-
-```sh
-docker run -d -e DCSS_LOG_FILE= -p 80:80 -v dcss-data:/data treyturner/dcss
 ```
 
 ## Building from Source
