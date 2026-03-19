@@ -14,11 +14,12 @@ DCSS_SERVER_ID="${DCSS_SERVER_ID:-}"
 
 ## Data paths
 DCSS_PASSWORD_DB="${DCSS_PASSWORD_DB:-${DCSS_DATA_DIR}/passwd.db3}"
-DCSS_DIR_PATH="${DCSS_DIR_PATH:-${DCSS_DATA_DIR}}"
+DCSS_DIR_PATH="${DCSS_DIR_PATH:-/app}"
 DCSS_RCFILE_PATH="${DCSS_RCFILE_PATH:-${DCSS_DATA_DIR}/rcs}"
 DCSS_MACRO_PATH="${DCSS_MACRO_PATH:-${DCSS_DATA_DIR}/rcs}"
 DCSS_MORGUE_PATH="${DCSS_MORGUE_PATH:-${DCSS_DATA_DIR}/rcs/%n}"
 DCSS_TTYREC_PATH="${DCSS_TTYREC_PATH:-${DCSS_DATA_DIR}/rcs/ttyrecs/%n}"
+DCSS_TTYREC_PATH_BASE="${DCSS_TTYREC_PATH%/%n}"
 DCSS_INPROGRESS_PATH="${DCSS_INPROGRESS_PATH:-${DCSS_DATA_DIR}/rcs/running}"
 DCSS_SOCKET_PATH="${DCSS_SOCKET_PATH:-${DCSS_DATA_DIR}/rcs}"
 
@@ -49,6 +50,18 @@ log_level_int() {
 
 cfg=/app/source/webserver/config.yml
 
+init_player=/app/source/webserver/init-player.sh
+
+cat > "$init_player" <<INITEOF
+#!/bin/sh
+set -e
+mkdir -p "${DCSS_RCFILE_PATH}" "${DCSS_INPROGRESS_PATH}" "${DCSS_TTYREC_PATH_BASE}/\$1"
+if [ ! -f "${DCSS_RCFILE_PATH}/\$1.rc" ]; then
+    cp /app/settings/init.txt "${DCSS_RCFILE_PATH}/\$1.rc"
+fi
+INITEOF
+chmod +x "$init_player"
+
 cat > "$cfg" <<EOF
 bind_address: "${DCSS_BIND_ADDRESS}"
 bind_port: ${DCSS_BIND_PORT}
@@ -56,6 +69,7 @@ password_db: "${DCSS_PASSWORD_DB}"
 server_id: "${DCSS_SERVER_ID}"
 crypt_algorithm: "${DCSS_CRYPT_ALGORITHM}"
 dgl_status_file: "${DCSS_DATA_DIR}/rcs/status"
+init_player_program: "${init_player}"
 EOF
 
 if [ -n "$DCSS_LOG_FILE" ]; then
@@ -185,10 +199,11 @@ EOF
 
 mkdir -p "${DCSS_DATA_DIR}" \
          "${DCSS_RCFILE_PATH}" \
-         "${DCSS_INPROGRESS_PATH}"
+         "${DCSS_INPROGRESS_PATH}" \
+         "${DCSS_TTYREC_PATH_BASE}"
 
-[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}" "${DCSS_RCFILE_PATH}" "${DCSS_INPROGRESS_PATH}"
-[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}" "${DCSS_RCFILE_PATH}" "${DCSS_INPROGRESS_PATH}"
+[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}"
+[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}"
 
 # Launch
 
