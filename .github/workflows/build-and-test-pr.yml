@@ -21,6 +21,8 @@ jobs:
         with:
           label: ${{ format('pr{0}', github.event.pull_request.number) }}
           upstream-ref: v${{ env.CRAWL_TAG }}
+          cache-scope: ${{ github.head_ref }}
+          cache-fallback-scope: main
 
       - name: Test
         uses: ./.github/actions/test
