@@ -24,9 +24,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     && pip install pyyaml
 
 RUN mkdir /build \
-    && cd /build \
-    && git clone ${CRAWL_REPO} --depth 1 crawl \
-    && cd crawl \
+    && git clone ${CRAWL_REPO} --depth 1 /build/crawl \
+    && cd /build/crawl \
     && git fetch origin tag ${CRAWL_TAG} --no-tags \
     && git checkout tags/${CRAWL_TAG} -b ${CRAWL_TAG} \
     && git submodule update --init
@@ -34,7 +33,10 @@ RUN mkdir /build \
 RUN cd /build/crawl/crawl-ref/source \
     # Alpine patch https://github.com/crawl/crawl/issues/2446
     && sed -i 's/#ifndef __HAIKU__/#if !defined(__HAIKU__) \&\& defined(__GLIBC__)/' crash.cc \
-    && make -j$(nproc --ignore=2) WEBTILES=y USE_DGAMELAUNCH=y
+    && make -j$(nproc) WEBTILES=y USE_DGAMELAUNCH=y
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip wheel -w /wheels -r /build/crawl/crawl-ref/source/webserver/requirements/base.py3.txt
 
 ###########
 # RUNTIME #
@@ -50,17 +52,14 @@ COPY --from=builder /build/crawl/crawl-ref/docs/ /app/docs/
 
 WORKDIR /app/source
 
-RUN --mount=type=cache,target=/var/cache/apk \
-    --mount=type=cache,target=/root/.cache/pip \
-    apk add gcc musl-dev \
-    && pip install -r /app/source/webserver/requirements/base.py3.txt
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir --no-deps /wheels/*.whl \
+    && rm -rf /wheels
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY --chmod=+x entrypoint.sh /app/entrypoint.sh
 
 ENV CRAWL_TAG=${CRAWL_TAG}
 
 VOLUME ["/data"]
-EXPOSE 80
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
