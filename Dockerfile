@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 ARG CRAWL_TAG=0.34.0
 
 ###########
@@ -9,7 +11,9 @@ FROM python:3.13-alpine AS builder
 ARG CRAWL_TAG \
     CRAWL_REPO=https://github.com/crawl/crawl
 
-RUN apk add --no-cache \
+RUN --mount=type=cache,target=/var/cache/apk \
+    --mount=type=cache,target=/root/.cache/pip \
+    apk add \
         g++ \
         gcc \
         git \
@@ -17,7 +21,7 @@ RUN apk add --no-cache \
         make \
         ncurses-dev \
         perl \
-    && pip install --no-cache-dir pyyaml
+    && pip install pyyaml
 
 RUN mkdir /build \
     && cd /build \
@@ -46,8 +50,10 @@ COPY --from=builder /build/crawl/crawl-ref/docs/ /app/docs/
 
 WORKDIR /app/source
 
-RUN apk add --no-cache gcc musl-dev \
-    && pip install --no-cache-dir -r /app/source/webserver/requirements/base.py3.txt
+RUN --mount=type=cache,target=/var/cache/apk \
+    --mount=type=cache,target=/root/.cache/pip \
+    apk add gcc musl-dev \
+    && pip install -r /app/source/webserver/requirements/base.py3.txt
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
