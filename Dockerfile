@@ -4,7 +4,7 @@ ARG CRAWL_TAG=0.34.0
 # BUILDER #
 ###########
 
-FROM python:3.14-alpine AS builder
+FROM python:3.13-alpine AS builder
 
 ARG CRAWL_TAG \
     CRAWL_REPO=https://github.com/crawl/crawl
@@ -36,7 +36,7 @@ RUN cd /build/crawl/crawl-ref/source \
 # RUNTIME #
 ###########
 
-FROM python:3.14-alpine AS runtime
+FROM python:3.13-alpine AS runtime
 
 ARG CRAWL_TAG
 
