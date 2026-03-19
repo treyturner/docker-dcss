@@ -21,6 +21,7 @@ DCSS_MORGUE_PATH="${DCSS_MORGUE_PATH:-${DCSS_DATA_DIR}/rcs/%n}"
 DCSS_TTYREC_PATH="${DCSS_TTYREC_PATH:-${DCSS_DATA_DIR}/rcs/ttyrecs/%n}"
 DCSS_TTYREC_PATH_BASE="${DCSS_TTYREC_PATH%/%n}"
 DCSS_INPROGRESS_PATH="${DCSS_INPROGRESS_PATH:-${DCSS_DATA_DIR}/rcs/running}"
+DCSS_SAVE_PATH="${DCSS_SAVE_PATH:-${DCSS_DATA_DIR}/saves}"
 DCSS_SOCKET_PATH="${DCSS_SOCKET_PATH:-${DCSS_DATA_DIR}/rcs}"
 
 ## Logging
@@ -158,6 +159,7 @@ templates:
     rcfile_path: "${DCSS_RCFILE_PATH}"
     macro_path: "${DCSS_MACRO_PATH}"
     morgue_path: "${DCSS_MORGUE_PATH}"
+    save_path: "${DCSS_SAVE_PATH}"
     socket_path: "${DCSS_SOCKET_PATH}"
     dir_path: "${DCSS_DIR_PATH}"
     inprogress_path: "${DCSS_INPROGRESS_PATH}"
@@ -199,12 +201,13 @@ EOF
 
 mkdir -p "${DCSS_DATA_DIR}" \
          "${DCSS_RCFILE_PATH}" \
+         "${DCSS_SAVE_PATH}" \
          "${DCSS_INPROGRESS_PATH}" \
          "${DCSS_TTYREC_PATH_BASE}" \
          "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}/db"
 
-[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
-[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
+[ -n "$DCSS_UID" ] && chown -R "$DCSS_UID" "${DCSS_DATA_DIR}" "${DCSS_SAVE_PATH}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
+[ -n "$DCSS_GID" ] && chgrp -R "$DCSS_GID" "${DCSS_DATA_DIR}" "${DCSS_SAVE_PATH}" "${DCSS_DIR_PATH}/cache.${CRAWL_TAG}"
 
 # Launch
 

@@ -55,12 +55,13 @@ All persistent data defaults to paths under `/data`. Mount a volume there to pre
 | --- | --- | --- |
 | `DCSS_DATA_DIR` | `/data` | Base directory for all persistent data |
 | `DCSS_PASSWORD_DB` | `$DCSS_DATA_DIR/passwd.db3` | User and password database |
-| `DCSS_DIR_PATH` | `$DCSS_DATA_DIR` | Game data directory (saves, milestones, logfile) |
+| `DCSS_DIR_PATH` | `$DCSS_DATA_DIR` | Game data directory (milestones, logfile) |
 | `DCSS_RCFILE_PATH` | `$DCSS_DATA_DIR/rcs` | Player RC files |
 | `DCSS_MACRO_PATH` | `$DCSS_DATA_DIR/rcs` | Player macro files |
 | `DCSS_MORGUE_PATH` | `$DCSS_DATA_DIR/rcs/%n` | Morgue dump directory (`%n` = player name) |
 | `DCSS_TTYREC_PATH` | `$DCSS_DATA_DIR/rcs/ttyrecs/%n` | TTYrec recording directory |
 | `DCSS_INPROGRESS_PATH` | `$DCSS_DATA_DIR/rcs/running` | In-progress game tracking |
+| `DCSS_SAVE_PATH` | `$DCSS_DATA_DIR/saves` | Dormant save games |
 | `DCSS_SOCKET_PATH` | `$DCSS_DATA_DIR/rcs` | Unix socket directory for crawl IPC |
 
 ### Logging
