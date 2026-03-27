@@ -4,9 +4,9 @@ Packages the open source turn-based CRPG [Dungeon Crawl Stone Soup](https://craw
 
 Images are published to Docker Hub, GitHub Container Registry, and Forgejo:
 
-- `docker.io/treyturner/dcss`
 - `ghcr.io/treyturner/dcss`
 - `forgejo.treyturner.info/treyturner/dcss`
+- `docker.io/treyturner/dcss`
 
 ## Quick Start
 
@@ -22,11 +22,9 @@ Every push to `main` builds and publishes a **dev** image. When ready, a dev ima
 
 | Tag | Description |
 | --- | --- |
-| `v<version>-dev` | Development build from `main` (e.g. `v0.34.0-dev`) |
-| `v<version>` | Stable release promoted from the corresponding dev tag (e.g. `v0.34.0`) |
+| `<version>-dev` | Development build from `main` (e.g. `0.34.1-dev`) |
+| `<version>` | Stable release promoted from the corresponding dev tag (e.g. `0.34.1`) |
 | `latest` | Points to the most recent stable release |
-
-Each CI run also produces a unique tag for traceability: `v<version>-dev-<run_id>.<attempt>`.
 
 ## Configuration
 
@@ -173,10 +171,10 @@ docker run -d \
 To build the image locally:
 
 ```sh
-docker build --build-arg CRAWL_TAG=0.34.0 -t dcss .
+docker build --build-arg CRAWL_TAG=0.34.1 -t dcss .
 ```
 
 | Build Argument | Default | Description |
 | --- | --- | --- |
 | `CRAWL_REPO` | `https://github.com/crawl/crawl` | Git repository to clone |
-| `CRAWL_TAG` | `0.34.0` | Version tag to build; appears in the lobby UI |
+| `CRAWL_TAG` | _(latest upstream)_ | Version tag to build; appears in the lobby UI |
