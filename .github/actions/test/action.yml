@@ -21,10 +21,10 @@ runs:
         echo "Testing crawl-tag file marker..."
         output="$(docker run --rm --entrypoint cat "${IMAGE_REF}" /app/crawl-tag)"
         if [[ "${output}" != "${CRAWL_TAG}" ]]; then
-          echo "❌ CRAWL_TAG mismatch: expected '${CRAWL_TAG}', got '${output}'"
+          echo "❌ crawl-tag: expected '${CRAWL_TAG}', got '${output}'"
           exit 1
         fi
-        echo "✅ CRAWL_TAG test passed"
+        echo "✅ crawl-tag: ${output}"
 
     - name: Test crawl binary version
       shell: bash -euo pipefail {0}
@@ -35,8 +35,7 @@ runs:
         echo "Testing crawl binary version..."
         output="$(docker run --rm --entrypoint ./crawl "${IMAGE_REF}" -version)"
         if ! grep -qF "${CRAWL_TAG}" <<< "${output}"; then
-          echo "❌ Unexpected crawl version:"
-          echo "${output}"
+          echo "❌ 'crawl -version': expected '${CRAWL_TAG}', got '${output}'"
           exit 1
         fi
-        echo "✅ Crawl binary version test passed"
+        echo "✅ 'crawl -version': ${output}"
