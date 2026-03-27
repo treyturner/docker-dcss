@@ -12,14 +12,14 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Test CRAWL_TAG environment variable
+    - name: Test bundled crawl-tag file marker
       shell: bash -euo pipefail {0}
       env:
         IMAGE_REF: ${{ inputs.image-ref }}
         CRAWL_TAG: ${{ inputs.crawl-tag }}
       run: |
-        echo "Testing CRAWL_TAG environment variable..."
-        output="$(docker run --rm --entrypoint printenv ${IMAGE_REF} CRAWL_TAG)"
+        echo "Testing crawl-tag file marker..."
+        output="$(docker run --rm --entrypoint cat "${IMAGE_REF}" /app/crawl-tag)"
         if [[ "${output}" != "${CRAWL_TAG}" ]]; then
           echo "❌ CRAWL_TAG mismatch: expected '${CRAWL_TAG}', got '${output}'"
           exit 1
@@ -33,7 +33,7 @@ runs:
         CRAWL_TAG: ${{ inputs.crawl-tag }}
       run: |
         echo "Testing crawl binary version..."
-        output="$(docker run --rm --entrypoint ./crawl ${IMAGE_REF} -version)"
+        output="$(docker run --rm --entrypoint ./crawl "${IMAGE_REF}" -version)"
         if ! grep -qF "${CRAWL_TAG}" <<< "${output}"; then
           echo "❌ Unexpected crawl version:"
           echo "${output}"

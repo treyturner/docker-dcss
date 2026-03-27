@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      CRAWL_TAG: "0.34.0"
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -20,9 +18,6 @@ jobs:
         uses: ./.github/actions/build
         with:
           label: ${{ format('pr{0}', github.event.pull_request.number) }}
-          upstream-ref: v${{ env.CRAWL_TAG }}
-          cache-scope: ${{ github.head_ref }}
-          cache-fallback-scope: main
 
       - name: Test
         uses: ./.github/actions/test

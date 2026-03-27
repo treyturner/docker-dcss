@@ -6,6 +6,7 @@ set -e
 ############
 
 DCSS_DATA="${DCSS_DATA:-/data}"
+CRAWL_TAG="${CRAWL_TAG:-$(cat /app/crawl-tag)}"
 
 ## Server
 DCSS_BIND_PORT="${DCSS_BIND_PORT:-8080}"

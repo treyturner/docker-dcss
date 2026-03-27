@@ -11,15 +11,7 @@ inputs:
     type: string
     required: false
   upstream-ref:
-    description: "Upstream ref to build"
-    type: string
-    required: true
-  cache-scope:
-    description: "GHA cache scope for layer caching (empty to disable)"
-    type: string
-    required: false
-  cache-fallback-scope:
-    description: "Additional GHA cache scope to read from as fallback"
+    description: "Optional upstream ref override (e.g. 0.34.1); if omitted, the latest upstream release tag is used"
     type: string
     required: false
 
@@ -46,7 +38,7 @@ outputs:
     description: "Built image digest"
     value: ${{ steps.build.outputs.digest }}
   crawl-tag:
-    description: "Upstream version without v prefix (e.g. 0.34.0)"
+    description: "Upstream version tag (e.g. 0.34.1)"
     value: ${{ steps.compute.outputs.crawl-tag }}
   metadata:
     description: "Built image metadata"
@@ -55,6 +47,22 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4.0.0
+
+    - name: Build image
+      id: build
+      uses: docker/build-push-action@eb6512707bea5740b2608f2a43ece7bc543cb75b  # v7.0.0
+      with:
+        context: .
+        push: false
+        load: true
+        build-args: |
+          CRAWL_TAG=${{ inputs.upstream-ref }}
+        tags: local/build:${{ github.run_id }}
+        cache-from: type=gha,scope=${{ inputs.upstream-ref || 'latest' }}
+        cache-to: type=gha,mode=max,scope=${{ inputs.upstream-ref || 'latest' }}
+
     - name: Compute tags and refs
       id: compute
       shell: bash -euo pipefail {0}
@@ -63,15 +71,15 @@ runs:
         LABEL: ${{ inputs.label }}
         REPOS: ${{ inputs.repos }}
         REPOSITORY_NAME: ${{ github.repository }}
-        CACHE_SCOPE: ${{ inputs.cache-scope }}
-        CACHE_FALLBACK_SCOPE: ${{ inputs.cache-fallback-scope }}
+        IMAGE_ID: ${{ steps.build.outputs.imageid }}
       run: |
+        if [[ -z "${UPSTREAM_REF:-}" ]]; then
+          UPSTREAM_REF=$(docker run --rm --entrypoint cat "${IMAGE_ID}" /app/crawl-tag)
+        fi
+
         tags=()
         base_tag="${UPSTREAM_REF}${LABEL:+-$LABEL}"
         tags+=("${base_tag}")
-
-        run_tag="${base_tag}-${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
-        tags+=("${run_tag}")
 
         mapfile -t repo_list < <(
           printf '%s' "${REPOS:-}" \
@@ -95,42 +103,22 @@ runs:
 
         primary_ref="${refs[0]}"
 
-        crawl_tag="${UPSTREAM_REF#v}"
-
-        cache_from=""
-        cache_to=""
-        if [[ -n "${CACHE_SCOPE:-}" ]]; then
-          cache_from="type=gha,scope=${CACHE_SCOPE}"
-          cache_to="type=gha,mode=max,scope=${CACHE_SCOPE}"
-        fi
-        if [[ -n "${CACHE_FALLBACK_SCOPE:-}" ]]; then
-          NL=$'\n'
-          cache_from="${cache_from:+${cache_from}${NL}}type=gha,scope=${CACHE_FALLBACK_SCOPE}"
-        fi
-
         {
-          printf 'crawl-tag=%s\n' "${crawl_tag}"
+          printf 'crawl-tag=%s\n' "${UPSTREAM_REF}"
           printf 'tags<<EOF\n%s\nEOF\n' "$(printf '%s\n' "${tags[@]}")"
           printf 'refs<<EOF\n%s\nEOF\n' "$(printf '%s\n' "${refs[@]}")"
           printf 'repos<<EOF\n%s\nEOF\n' "$(printf '%s\n' "${repo_list[@]}")"
           printf 'primary-tag=%s\n' "${base_tag}"
           printf 'primary-ref=%s\n' "${primary_ref}"
-          printf 'cache-from<<EOF\n%s\nEOF\n' "${cache_from}"
-          printf 'cache-to=%s\n' "${cache_to}"
         } >> "$GITHUB_OUTPUT"
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4.0.0
-
-    - name: Build image
-      id: build
-      uses: docker/build-push-action@eb6512707bea5740b2608f2a43ece7bc543cb75b  # v7.0.0
-      with:
-        context: .
-        push: false
-        load: true
-        build-args: |
-          CRAWL_TAG=${{ steps.compute.outputs.crawl-tag }}
-        tags: ${{ steps.compute.outputs.refs }}
-        cache-from: ${{ steps.compute.outputs.cache-from }}
-        cache-to: ${{ steps.compute.outputs.cache-to }}
+    - name: Apply final image tags
+      shell: bash -euo pipefail {0}
+      env:
+        IMAGE_ID: ${{ steps.build.outputs.imageid }}
+        REFS: ${{ steps.compute.outputs.refs }}
+      run: |
+        while IFS= read -r ref; do
+          [[ -z "${ref}" ]] && continue
+          docker tag "${IMAGE_ID}" "${ref}"
+        done <<< "${REFS}"
