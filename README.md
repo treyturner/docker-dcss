@@ -2,7 +2,7 @@
 
 Packages the open source turn-based CRPG [Dungeon Crawl Stone Soup](https://crawl.develz.org/) as a standalone server with webtiles support, allowing you to play in a browser from anywhere.
 
-Images are published to Docker Hub, GitHub Container Registry, and Forgejo:
+Images are published to GitHub Container Registry, Forgejo, and Docker Hub:
 
 - `ghcr.io/treyturner/dcss`
 - `forgejo.treyturner.info/treyturner/dcss`
@@ -168,10 +168,16 @@ docker run -d \
 
 ## Building from Source
 
-To build the image locally:
+To build an image of the latest upstream release:
 
 ```sh
-docker build --build-arg CRAWL_TAG=0.34.1 -t dcss .
+docker build -t dcss .
+```
+
+or specify a version via the `CRAWL_TAG` build arg, though the build will surely break at some prior version:
+
+```sh
+docker build --build-arg CRAWL_TAG=0.34.0 -t dcss .
 ```
 
 | Build Argument | Default | Description |
