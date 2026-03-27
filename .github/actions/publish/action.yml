@@ -3,19 +3,14 @@ description: Publish a Docker image to one or more registries
 
 inputs:
   dockerhub-username:
-    type: string
     required: false
   dockerhub-password:
-    type: string
     required: false
   github-token:
-    type: string
     required: true
   forgejo-token:
-    type: string
     required: true
   refs:
-    type: string
     required: true
 
 runs:
