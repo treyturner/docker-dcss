@@ -1,14 +1,15 @@
-name: Promote dev version tag to release version tag
+name: Promote dev to release
+run-name: Promote ${{ inputs.release-version }}-dev to ${{ inputs.release-version }}${{ inputs.promote-latest && ' and latest' || '' }}
 
 on:
   workflow_dispatch:
     inputs:
       release-version:
-        description: "Targeted release version tag (e.g. '0.34.1')"
+        description: "Targeted release tag (e.g. '0.34.1')"
         type: string
         required: true
       promote-latest:
-        description: "Also promote to 'latest' tag (only enable if promoting the newest DCSS release)"
+        description: "Also promote to 'latest' (only enable if promoting the newest DCSS release)"
         type: boolean
         required: false
         default: false
@@ -84,37 +85,28 @@ jobs:
           TARGET_TAGS: ${{ steps.prepare.outputs.tags }}
         run: |
           owner_lower=$(printf '%s' "$GH_OWNER" | tr '[:upper:]' '[:lower:]')
-          # hub_source="${DOCKERHUB_USERNAME}/${PROJECT_NAME}:${SOURCE_TAG}"
-          ghcr_source="ghcr.io/${owner_lower}/${PROJECT_NAME}:${SOURCE_TAG}"
-          forgejo_source="forgejo.treyturner.info/${owner_lower}/${PROJECT_NAME}:${SOURCE_TAG}"
 
-          mkdir -p tags
-          printf '%s\n' "$TARGET_TAGS" > tags/list
+          declare -A repos=(
+            [ghcr.io]="${owner_lower}/${PROJECT_NAME}"
+            [forgejo.treyturner.info]="${owner_lower}/${PROJECT_NAME}"
+            [docker.io]="${DOCKERHUB_USERNAME}/${PROJECT_NAME}"
+          )
 
-          # echo "Validating source manifest on DockerHub: ${hub_source}"
-          # docker buildx imagetools inspect "${hub_source}" > /dev/null
+          for registry in "${!repos[@]}"; do
+            source="${registry}/${repos[$registry]}:${SOURCE_TAG}"
+            echo "Validating source manifest on ${registry}: ${source}"
+            docker buildx imagetools inspect "${source}" > /dev/null
+          done
 
-          echo "Validating source manifest on GHCR: ${ghcr_source}"
-          docker buildx imagetools inspect "${ghcr_source}" > /dev/null
-
-          echo "Validating source manifest on Forgejo: ${forgejo_source}"
-          docker buildx imagetools inspect "${forgejo_source}" > /dev/null
-
-          while IFS= read -r tag; do
+          mapfile -t tags <<< "$TARGET_TAGS"
+          for tag in "${tags[@]}"; do
             [ -n "$tag" ] || continue
 
-            # echo "Promoting DockerHub tag: ${hub_source} -> ${tag}"
-            # docker buildx imagetools create \
-            #   --tag "${DOCKERHUB_USERNAME}/${PROJECT_NAME}:${tag}" \
-            #   "${hub_source}"
-
-            echo "Promoting GHCR tag: ${ghcr_source} -> ${tag}"
-            docker buildx imagetools create \
-              --tag "ghcr.io/${owner_lower}/${PROJECT_NAME}:${tag}" \
-              "${ghcr_source}"
-
-            echo "Promoting Forgejo tag: ${forgejo_source} -> ${tag}"
-            docker buildx imagetools create \
-              --tag "forgejo.treyturner.info/${owner_lower}/${PROJECT_NAME}:${tag}" \
-              "${forgejo_source}"
-          done < tags/list
+            for registry in "${!repos[@]}"; do
+              source="${registry}/${repos[$registry]}:${SOURCE_TAG}"
+              echo "Promoting ${registry} tag: ${source} -> ${tag}"
+              docker buildx imagetools create \
+                --tag "${registry}/${repos[$registry]}:${tag}" \
+                "${source}"
+            done
+          done
