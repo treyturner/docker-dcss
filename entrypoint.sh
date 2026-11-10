@@ -213,4 +213,11 @@ mkdir -p "${data_dirs[@]}"
 
 # Launch
 
+# Webtiles closes every fd up to the soft limit before spawning Crawl.
+# Cap large inherited limits to avoid spending minutes in that loop.
+nofile_soft=$(ulimit -Sn)
+if [[ "$nofile_soft" == unlimited ]] || (( nofile_soft > 4096 )); then
+    ulimit -Sn 4096
+fi
+
 exec python webserver/server.py "$@"
