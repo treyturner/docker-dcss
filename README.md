@@ -16,6 +16,8 @@ docker run -d -p 8080:8080 -v dcss-data:/data treyturner/dcss
 
 Then open `http://localhost:8080` in a browser.
 
+The entrypoint caps the soft open-file limit at 4096 (preserving lower limits) to prevent slow Webtiles game launches on hosts with high defaults. The hard limit is unchanged.
+
 ## Image Tags
 
 Every push to `main` builds and publishes a **dev** image. When ready, a dev image is promoted to a **release** tag.
